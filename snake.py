@@ -8,6 +8,9 @@ LARGEUR_PLATEAU = 40  # en nombre de cases
 HAUTEUR_PLATEAU = 30  # en nombre de cases
 DELAI_POMMES = 4     # délai entre l'apparition des pommes, en secondes (pour un framerate de 10/s)
 
+torus = True
+accel = True
+
 def case_vers_pixel(case):
     """
     Reçoit les coordonnées d'une case du plateau sous la 
@@ -49,27 +52,40 @@ def change_direction(direction, touche):
 def avance_serpent(serpent, direction, pomme_mangee):
     x, y = serpent[0]
     u, v = direction
+    new_x = x + u
+    new_y = y + v
 
     if pomme_mangee:
-        serpent.insert(0, (x + u, y + v))
+        serpent.insert(0, (new_x, new_y))
     else:
         for i in range(len(serpent)-1):
             serpent[len(serpent)-i-1] = serpent[len(serpent)-i-2]
-        serpent[0] = (x + u, y + v)
+
+        if new_x < 0:
+            new_x = LARGEUR_PLATEAU - 1
+        elif new_x >= LARGEUR_PLATEAU:
+            new_x = 0
+
+        if new_y < 0:
+            new_y = HAUTEUR_PLATEAU - 1
+        elif new_y >= HAUTEUR_PLATEAU:
+            new_y = 0
+
+        serpent[0] = (new_x, new_y)
 
     return serpent
 
 def detection(serpent, direction):
     x, y = serpent[0]
     u, v = direction
-    if x + u < 0 or x + u >= LARGEUR_PLATEAU or y + v < 0 or y + v >= HAUTEUR_PLATEAU:
+    if (x + u < 0 or x + u >= LARGEUR_PLATEAU or y + v < 0 or y + v >= HAUTEUR_PLATEAU) and not torus:
         return True
     if (x + u, y + v) in serpent and direction != (0, 0):
         return True
     return False
 
 def generation_pomme(pommes, serpent, timer):
-    if timer >= DELAI_POMMES * 10:
+    if timer >= DELAI_POMMES:
         while True:
             pomme = (randint(0, LARGEUR_PLATEAU-1), randint(0, HAUTEUR_PLATEAU-1))
             if (pomme not in pommes) and (pomme not in serpent):
@@ -87,13 +103,49 @@ def mange_pomme(serpent, pommes, score):
         return False, pommes, score
 
 def ecran_titre():
+    efface_tout()
     texte(TAILLE_CASE*LARGEUR_PLATEAU/2, TAILLE_CASE*HAUTEUR_PLATEAU/8, "Bienvenue à", ancrage='center')
     texte(TAILLE_CASE*LARGEUR_PLATEAU/2, TAILLE_CASE*HAUTEUR_PLATEAU/4, "Snake", ancrage='center', taille=48, couleur='green')
     texte(TAILLE_CASE*LARGEUR_PLATEAU/2, TAILLE_CASE*HAUTEUR_PLATEAU/2, "Faites un clic gauche pour commencer", taille=14, ancrage='center')
+    
+    while True:
+            ev= attend_ev()
+            ty = type_ev(ev)
+            if ty == 'Quitte':
+                ferme_fenetre()
+            elif ty == 'ClicGauche':
+                break
 
-def game_over(score):
-    texte(TAILLE_CASE*LARGEUR_PLATEAU/2, TAILLE_CASE*HAUTEUR_PLATEAU/4, "Game Over", ancrage='center', taille=48, couleur='red')
-    texte(TAILLE_CASE*LARGEUR_PLATEAU/2, TAILLE_CASE*HAUTEUR_PLATEAU/2, "Votre score final est : " + str(score), ancrage='center', taille=14)
+def affiche_bouton(x, y, longueur, largeur, text='', coul='black', rempl=''):
+    rectangle(x - longueur/2, y - largeur/2, x + longueur/2, y + largeur/2, remplissage=rempl, couleur=coul)
+    texte(x, y, text, police='Arial Black', ancrage='center')
+
+def clique_bouton(x, y, longueur, largeur, ev):
+    if (x-longueur/2 <= abscisse(ev) <= x+longueur/2) and (y-largeur/2 <= ordonnee(ev) <= y+largeur/2):
+        return True
+    return False
+
+def game_over(score, timer):
+    efface_tout()
+    texte(300, 112.5, "Game Over", ancrage='center', taille=48, couleur='red')
+    texte(300, 225, "Votre score final est : " + str(score), ancrage='center', taille=14)
+    texte(300, 195, "Vous avez tenu : " + chaine_temps(timer), ancrage='center', taille=14)
+    
+    texte(300, 300, "Voulez-vous rejouer ?", ancrage='center', taille=14)
+
+    affiche_bouton(300, 346, 180, 60, 'Oui', rempl='green')
+    affiche_bouton(300, 409, 180, 60, 'Non', rempl='red')
+    
+    while True:
+            ev = attend_ev()
+            ty = type_ev(ev)
+            if ty == 'Quitte':
+                ferme_fenetre()
+            elif ty == 'ClicGauche':
+                if clique_bouton(300, 346, 180, 60, ev):
+                    break
+                elif clique_bouton(300, 409, 180, 60, ev):
+                    ferme_fenetre()
 
 def pause():
     texte(TAILLE_CASE*LARGEUR_PLATEAU/2, TAILLE_CASE*HAUTEUR_PLATEAU/2, "Pause", taille=72, ancrage='center', tag='pause', couleur='blue')
@@ -107,7 +159,7 @@ def pause():
                 break
     efface('pause')
 
-def affiche_temps(timer):
+def chaine_temps(timer):
     secondes, minutes = int(timer)%60, int(timer)//60
     if secondes < 10:
         secondes = '0' + str(secondes)
@@ -117,91 +169,93 @@ def affiche_temps(timer):
         minutes = '0' + str(minutes)
     else:
         minutes = str(minutes)
-    
-    texte(330, HAUTEUR_PLATEAU*TAILLE_CASE+80/5, "Temps : " + minutes + ':' + secondes, taille=24, police='Arial Black', couleur='white')
+
+    return minutes + ':' + secondes
+
+def affiche_temps(timer):
+    texte(400, 473, "Temps : " + chaine_temps(timer), taille=18, police='Arial Black', couleur='white')
 
 def affiche_score(score):
-    texte(10, HAUTEUR_PLATEAU*TAILLE_CASE+80/5, 'Score : ' + str(score), taille=24, police='Arial Black', couleur='white')
+    texte(10, 473, 'Score : ' + str(score), taille=18, police='Arial Black', couleur='white')
 
-def affiche_hud(score, timer):
+def affiche_vitesse(framerate):
+    texte(170, 473, 'Vitesse : %d' % (framerate*10) + '%', taille=18, police='Arial Black', couleur='white')
+
+def affiche_hud(score, timer, framerate):
     rectangle(0, HAUTEUR_PLATEAU * TAILLE_CASE, LARGEUR_PLATEAU*TAILLE_CASE, HAUTEUR_PLATEAU * TAILLE_CASE + 80, couleur='', remplissage='black')
     affiche_score(score)
     affiche_temps(timer)
+    affiche_vitesse(framerate)
 
 # programme principal
 if __name__ == "__main__":
 
     # initialisation du jeu
-    framerate = 10    # taux de rafraîchissement du jeu en images/s
-    direction = (0, 0)  # direction initiale du serpent
-    pommes = [] # liste des coordonnées des cases contenant des pommes
-    serpent = [(LARGEUR_PLATEAU//2, HAUTEUR_PLATEAU//2)] # liste des coordonnées de cases adjacentes décrivant le serpent
     cree_fenetre(TAILLE_CASE * LARGEUR_PLATEAU,
                  TAILLE_CASE * HAUTEUR_PLATEAU + 80)
-    timer_pomme = 0
-    pomme_mangee = False
-    score = 0
-    timer = 0
 
-    # écran titre
-    ecran_titre()
+    # boucle permettant de recommencer une nouvelle partie
     while True:
-        ev= attend_ev()
-        ty = type_ev(ev)
-        if ty == 'Quitte':
-            ferme_fenetre()
-        elif ty == 'ClicGauche':
-            break
-
-    # boucle principale
-    jouer = True
-    while jouer:
-        # affichage des objets
-        efface_tout()
-        affiche_pommes(pommes) 
-        affiche_serpent(serpent)
-        affiche_hud(score, timer)
-        mise_a_jour()
         
-        # gestion des événements
-        ev = donne_ev()
-        ty = type_ev(ev)
-        if ty == 'Quitte':
-            ferme_fenetre()
-        elif ty == 'Touche':
-            print(touche(ev))
-            direction = change_direction(direction, touche(ev))
-            if touche(ev) == 'p':
-                pause()
-
-        # mouvement du serpent et détection d'une collision avec le mur ou le serpent lui-même
-        if detection(serpent, direction):
-            jouer = False
-        else:
-            serpent = avance_serpent(serpent, direction, pomme_mangee)
-
-        # gestion de la consommation des pommes
+        framerate = 10    # taux de rafraîchissement du jeu en images/s
+        direction = (0, 0)  # direction initiale du serpent
+        pommes = [] # liste des coordonnées des cases contenant des pommes
+        serpent = [(LARGEUR_PLATEAU//2, HAUTEUR_PLATEAU//2)] # liste des coordonnées de cases adjacentes décrivant le serpent
+        timer_pomme = 0
         pomme_mangee = False
-        pomme_mangee, pommes, score = mange_pomme(serpent, pommes, score)
+        score = 0
+        timer = 0
 
-        # gestion de la génération des pommes
-        pommes, timer_pomme = generation_pomme(pommes, serpent, timer_pomme)
-        timer_pomme += 1
+        # écran titre
+        ecran_titre()
+        
+        # boucle principale
+        jouer = True
+        while jouer:
+            # affichage des objets
+            efface_tout()
+            affiche_pommes(pommes) 
+            affiche_serpent(serpent)
+            affiche_hud(score, timer, framerate)
+            mise_a_jour()
+            
+            # gestion des événements
+            ev = donne_ev()
+            ty = type_ev(ev)
+            if ty == 'Quitte':
+                ferme_fenetre()
+            elif ty == 'Touche':
+                print(touche(ev))
+                direction = change_direction(direction, touche(ev))
+                if touche(ev) == 'p':
+                    pause()
 
-        # attente avant rafraîchissement
-        sleep(1/framerate)
-        timer += 1/framerate
+            # mouvement du serpent et détection d'une collision avec le mur ou le serpent lui-même
+            if detection(serpent, direction):
+                jouer = False
+            else:
+                serpent = avance_serpent(serpent, direction, pomme_mangee)
 
-    # écran de fin
-    efface_tout()
-    game_over(score)
-    while True:
-        ev= attend_ev()
-        ty = type_ev(ev)
-        if ty == 'Quitte':
-            ferme_fenetre()
-        elif ty == 'ClicGauche':
-            break
+            # gestion de la consommation des pommes
+            pomme_mangee = False
+            pomme_mangee, pommes, score = mange_pomme(serpent, pommes, score)
+
+            # gestion de la génération des pommes
+            pommes, timer_pomme = generation_pomme(pommes, serpent, timer_pomme)
+            timer_pomme += 1/framerate
+            timer += 1/framerate
+
+            if accel and framerate < 70 and pomme_mangee:
+                framerate += 0.25
+                print(framerate)
+
+            # attente avant rafraîchissement
+            sleep(1/framerate)
+            
+
+        # écran de fin
+        game_over(score, timer)
+        
 
     # fermeture et sortie
     ferme_fenetre()
