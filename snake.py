@@ -146,7 +146,8 @@ def generation_pomme(pommes, pommes_special, serpent, murs, timer, powerups):
                     return pommes, pommes_special, 0
     return pommes, pommes_special, timer
 
-def generation_mur(murs, nb_murs):
+def generation_mur(nb_murs):
+    murs = []
     for i in range(nb_murs):
         mur = (randint(0, LARGEUR_PLATEAU-1), randint(0, HAUTEUR_PLATEAU-1))
         while mur in murs or mur == (LARGEUR_PLATEAU//2, HAUTEUR_PLATEAU//2):
@@ -157,17 +158,14 @@ def generation_mur(murs, nb_murs):
 def mange_pomme(serpent, pommes, pommes_special, score, ralenti, invincible):
     if serpent[0] in pommes:
         if serpent[0] in pommes_special:
+            pommes.remove(serpent[0])
+            pommes_special.pop(serpent[0])
+            
             if pommes_special[serpent[0]] == 'or':
-                pommes.remove(serpent[0])
-                pommes_special.pop(serpent[0])
                 return True, pommes, pommes_special, score+10, ralenti, invincible
             elif pommes_special[serpent[0]] == 'bleu':
-                pommes.remove(serpent[0])
-                pommes_special.pop(serpent[0])
                 return True, pommes, pommes_special, score+1, 5, invincible
             elif pommes_special[serpent[0]] == 'super':
-                pommes.remove(serpent[0])
-                pommes_special.pop(serpent[0])
                 return True, pommes, pommes_special, score+1, ralenti, 10
         else:
             pommes.remove(serpent[0])
@@ -200,6 +198,9 @@ def ecran_titre(torus, accel, nb_murs, couleur_serp, powerups):
                         return torus, accel, nb_murs, couleur_serp, powerups
 
 def affiche_boutons_options(torus, accel, nb_murs, couleur_serp, powerups):
+    texte(300, 80, 'Couleur du serpent', ancrage='center', taille = 14)
+    affiche_bouton(300, 120, 180, 60, '', rempl=couleur_serp)
+    
     if torus:
         affiche_bouton(300, 200, 180, 60, 'Torus', rempl='green')
     else:
@@ -223,9 +224,6 @@ def affiche_boutons_options(torus, accel, nb_murs, couleur_serp, powerups):
         affiche_bouton(300, 440, 260, 60, 'Bonus', rempl='green')
     else:
         affiche_bouton(300, 440, 260, 60, 'Bonus', rempl='red')
-    
-    texte(300, 80, 'Couleur du serpent', ancrage='center', taille = 14)
-    affiche_bouton(300, 120, 180, 60, '', rempl=couleur_serp)
 
 def options(torus, accel, nb_murs, couleur_serp, powerups):
     while True:
@@ -235,47 +233,47 @@ def options(torus, accel, nb_murs, couleur_serp, powerups):
         affiche_bouton(80, 490, 140, 60, 'Retour', rempl='grey')
 
         while True:
-                ev = attend_ev()
-                ty = type_ev(ev)
-                if ty == 'Quitte':
-                    ferme_fenetre()
-                elif ty == 'ClicGauche':
-                    if clique_bouton(300, 200, 180, 60, ev):
-                        torus = not torus
-                        break
-                    elif clique_bouton(300, 280, 260, 60, ev):
-                        accel = not accel
-                        break
-                    elif clique_bouton(300, 360, 180, 60, ev):
-                        if nb_murs == 0:
-                            nb_murs = 20
-                        elif nb_murs == 20:
-                            nb_murs = 50
-                        elif nb_murs == 50:
-                            nb_murs = 70
-                        else:
-                            nb_murs = 0
-                        break
-                    elif clique_bouton(300, 120, 180, 60, ev):
-                        actuel = CYCLE_COULEUR.index(couleur_serp)
-                        if actuel == len(CYCLE_COULEUR)-1:
-                            couleur_serp = CYCLE_COULEUR[0]
-                        else:
-                            couleur_serp = CYCLE_COULEUR[actuel+1]
-                        break
-                    elif clique_bouton(300, 440, 260, 60, ev):
-                        powerups = not powerups
-                        break
-                    elif clique_bouton(80, 490, 140, 60, ev):
-                        return torus, accel, nb_murs, couleur_serp, powerups
-                elif ty == 'ClicDroit':
-                    if clique_bouton(300, 120, 180, 60, ev):
-                        actuel = CYCLE_COULEUR.index(couleur_serp)
-                        if actuel == 0:
-                            couleur_serp = CYCLE_COULEUR[-1]
-                        else:
-                            couleur_serp = CYCLE_COULEUR[actuel-1]
-                        break
+            ev = attend_ev()
+            ty = type_ev(ev)
+            if ty == 'Quitte':
+                ferme_fenetre()
+            elif ty == 'ClicGauche':
+                if clique_bouton(300, 200, 180, 60, ev):
+                    torus = not torus
+                    break
+                elif clique_bouton(300, 280, 260, 60, ev):
+                    accel = not accel
+                    break
+                elif clique_bouton(300, 360, 180, 60, ev):
+                    if nb_murs == 0:
+                        nb_murs = 20
+                    elif nb_murs == 20:
+                        nb_murs = 50
+                    elif nb_murs == 50:
+                        nb_murs = 70
+                    else:
+                        nb_murs = 0
+                    break
+                elif clique_bouton(300, 120, 180, 60, ev):
+                    actuel = CYCLE_COULEUR.index(couleur_serp)
+                    if actuel == len(CYCLE_COULEUR)-1:
+                        couleur_serp = CYCLE_COULEUR[0]
+                    else:
+                        couleur_serp = CYCLE_COULEUR[actuel+1]
+                    break
+                elif clique_bouton(300, 440, 260, 60, ev):
+                    powerups = not powerups
+                    break
+                elif clique_bouton(80, 490, 140, 60, ev):
+                    return torus, accel, nb_murs, couleur_serp, powerups
+            elif ty == 'ClicDroit':
+                if clique_bouton(300, 120, 180, 60, ev):
+                    actuel = CYCLE_COULEUR.index(couleur_serp)
+                    if actuel == 0:
+                        couleur_serp = CYCLE_COULEUR[-1]
+                    else:
+                        couleur_serp = CYCLE_COULEUR[actuel-1]
+                    break
 
 
 def affiche_bouton(x, y, longueur, largeur, text='', coul='black', rempl=''):
@@ -383,16 +381,11 @@ if __name__ == "__main__":
         pommes = [] # liste des coordonnées des cases contenant des pommes
         pommes_special = {} # dictionnaire permettant de retenir quelles pommes sont spéciales
         serpent = [(LARGEUR_PLATEAU//2, HAUTEUR_PLATEAU//2)] # liste des coordonnées de cases adjacentes décrivant le serpent
-        murs = []
-        timer_pomme = 0
+        murs = generation_mur(nb_murs)
         pomme_mangee = False
-        score = 0
-        timer = 0
-        ralenti = 0
-        invincible = 0
+        timer_pomme, score, timer, ralenti, invincible = 0, 0, 0, 0, 0
         rainbow = 'red'
         frein_debut = True
-        murs = generation_mur(murs, nb_murs)
         couleur = couleur_serp
         
         # boucle principale
@@ -405,6 +398,8 @@ if __name__ == "__main__":
             affiche_hud(score, timer, framerate, ralenti > 0)
             affiche_murs(murs)
             mise_a_jour()
+
+            # déverouillage des timers lorsque le serpent commence à bouger
             if frein_debut:
                 frein_debut = direction == (0, 0)
             
@@ -434,8 +429,10 @@ if __name__ == "__main__":
             pomme_mangee, pommes, pommes_special, score, ralenti, invincible = mange_pomme(serpent, pommes, pommes_special, score, ralenti, invincible)
 
             # gestion de la génération des pommes
+            pommes, pommes_special, timer_pomme = generation_pomme(pommes, pommes_special, serpent, murs, timer_pomme, powerups)
+
+            # gestion des timers
             if not frein_debut:
-                pommes, pommes_special, timer_pomme = generation_pomme(pommes, pommes_special, serpent, murs, timer_pomme, powerups)
                 timer_pomme += 1/framerate
                 timer += 1/framerate
 
@@ -449,6 +446,7 @@ if __name__ == "__main__":
             else:
                 ralenti = 0
 
+            # gestion de l'accélération
             if accel and framerate < 70 and pomme_mangee:
                 framerate += 0.25
                 print(framerate)
