@@ -196,7 +196,6 @@ if __name__ == "__main__":
 
     # boucle permettant de recommencer une nouvelle partie
     while True:
-        
         framerate = 10    # taux de rafraîchissement du jeu en images/s
         direction = (0, 0)  # direction initiale du serpent
         pommes = [] # liste des coordonnées des cases contenant des pommes
