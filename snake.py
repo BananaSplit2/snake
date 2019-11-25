@@ -6,7 +6,7 @@ from random import randint
 TAILLE_CASE = 15
 LARGEUR_PLATEAU = 40  # en nombre de cases
 HAUTEUR_PLATEAU = 30  # en nombre de cases
-DELAI_POMMES = 1     # délai entre l'apparition des pommes, en secondes (pour un framerate de 10/s)
+DELAI_POMMES = 4     # délai entre l'apparition des pommes, en secondes (pour un framerate de 10/s)
 MAX_POMMES = 3        # nombre maximum de pomme présentes à l'écran en même temps
 
 CYCLE_COULEUR = ['green', 'darkgreen', 'lightgreen', 'blue', 'cyan',
