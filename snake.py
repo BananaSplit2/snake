@@ -7,9 +7,9 @@ TAILLE_CASE = 15
 LARGEUR_PLATEAU = 40  # en nombre de cases
 HAUTEUR_PLATEAU = 30  # en nombre de cases
 DELAI_POMMES = 4     # délai entre l'apparition des pommes, en secondes (pour un framerate de 10/s)
+MAX_POMMES = 3        # nombre maximum de pomme présentes à l'écran en même temps
 
-torus = True
-accel = True
+CYCLE_COULEUR = ['green', 'darkgreen', 'lightgreen', 'blue', 'cyan', 'lightblue', 'red', 'pink', 'yellow', 'orange', 'magenta', 'purple', 'black', 'white']
 
 def case_vers_pixel(case):
     """
@@ -30,12 +30,17 @@ def affiche_pommes(pommes):
         rectangle(x-2, y-TAILLE_CASE*.4, x+2, y-TAILLE_CASE*.7,
                   couleur='darkgreen', remplissage='darkgreen')
 
-def affiche_serpent(serpent):
+def affiche_murs(murs):
+    for mur in murs:
+        x, y = case_vers_pixel(mur)
+        rectangle(x-TAILLE_CASE/2, y-TAILLE_CASE/2, x+TAILLE_CASE/2, y+TAILLE_CASE/2, couleur='black', remplissage='grey')
+
+def affiche_serpent(serpent, couleur_serp):
     for partie in serpent:
         x, y = case_vers_pixel(partie)
 
         cercle(x, y, TAILLE_CASE/2 + 1,
-               couleur='darkgreen', remplissage='green')
+               couleur='black', remplissage=couleur_serp)
 
 def change_direction(direction, touche):
     if touche == 'Up':
@@ -75,24 +80,34 @@ def avance_serpent(serpent, direction, pomme_mangee):
 
     return serpent
 
-def detection(serpent, direction):
+def detection(serpent, murs, direction):
     x, y = serpent[0]
     u, v = direction
     if (x + u < 0 or x + u >= LARGEUR_PLATEAU or y + v < 0 or y + v >= HAUTEUR_PLATEAU) and not torus:
         return True
     if (x + u, y + v) in serpent and direction != (0, 0):
         return True
+    if (x + u, y + v) in murs:
+        return True
     return False
 
-def generation_pomme(pommes, serpent, timer):
-    if timer >= DELAI_POMMES:
-        while True:
-            pomme = (randint(0, LARGEUR_PLATEAU-1), randint(0, HAUTEUR_PLATEAU-1))
-            if (pomme not in pommes) and (pomme not in serpent):
-                pommes.append(pomme)
-                return pommes, 0
-    else:
-        return pommes, timer
+def generation_pomme(pommes, serpent, murs, timer):
+    if len(pommes) < MAX_POMMES:
+        if timer >= DELAI_POMMES:
+            while True:
+                pomme = (randint(0, LARGEUR_PLATEAU-1), randint(0, HAUTEUR_PLATEAU-1))
+                if (pomme not in pommes) and (pomme not in serpent) and (pomme not in murs):
+                    pommes.append(pomme)
+                    return pommes, 0
+    return pommes, timer
+
+def generation_mur(murs, nb_murs):
+    for i in range(nb_murs):
+        mur = (randint(0, LARGEUR_PLATEAU-1), randint(0, HAUTEUR_PLATEAU-1))
+        while mur in murs or mur == (LARGEUR_PLATEAU//2, HAUTEUR_PLATEAU//2):
+            mur = (randint(0, LARGEUR_PLATEAU-1), randint(0, HAUTEUR_PLATEAU-1))
+        murs.append(mur)
+    return murs
 
 def mange_pomme(serpent, pommes, score):
     if serpent[0] in pommes:
@@ -102,19 +117,89 @@ def mange_pomme(serpent, pommes, score):
     else:
         return False, pommes, score
 
-def ecran_titre():
-    efface_tout()
-    texte(TAILLE_CASE*LARGEUR_PLATEAU/2, TAILLE_CASE*HAUTEUR_PLATEAU/8, "Bienvenue à", ancrage='center')
-    texte(TAILLE_CASE*LARGEUR_PLATEAU/2, TAILLE_CASE*HAUTEUR_PLATEAU/4, "Snake", ancrage='center', taille=48, couleur='green')
-    texte(TAILLE_CASE*LARGEUR_PLATEAU/2, TAILLE_CASE*HAUTEUR_PLATEAU/2, "Faites un clic gauche pour commencer", taille=14, ancrage='center')
-    
+def ecran_titre(torus, accel, nb_murs, couleur_serp):
     while True:
-            ev= attend_ev()
-            ty = type_ev(ev)
-            if ty == 'Quitte':
-                ferme_fenetre()
-            elif ty == 'ClicGauche':
-                break
+        efface_tout()
+        texte(TAILLE_CASE*LARGEUR_PLATEAU/2, TAILLE_CASE*HAUTEUR_PLATEAU/8, "Bienvenue à", ancrage='center')
+        texte(TAILLE_CASE*LARGEUR_PLATEAU/2, TAILLE_CASE*HAUTEUR_PLATEAU/4, "Snake", ancrage='center', taille=48, couleur='green')
+        texte(TAILLE_CASE*LARGEUR_PLATEAU/2, TAILLE_CASE*HAUTEUR_PLATEAU/2, "Faites un clic gauche pour commencer", taille=14, ancrage='center')
+
+        affiche_bouton(300, 346, 180, 60, 'Options', rempl='grey')
+        
+        while True:
+                ev= attend_ev()
+                ty = type_ev(ev)
+                if ty == 'Quitte':
+                    ferme_fenetre()
+                elif ty == 'ClicGauche':
+                    if clique_bouton(300, 346, 180, 60, ev):
+                        torus, accel, nb_murs, couleur_serp = options(torus, accel, nb_murs, couleur_serp)
+                        break
+                    else:
+                        return torus, accel, nb_murs, couleur_serp
+
+def affiche_boutons_options(torus, accel, nb_murs, couleur_serp):
+    if torus:
+        affiche_bouton(300, 200, 180, 60, 'Torus', rempl='green')
+    else:
+        affiche_bouton(300, 200, 180, 60, 'Torus', rempl='red')
+    
+    if accel:
+        affiche_bouton(300, 280, 260, 60, 'Accélération', rempl='green')
+    else:
+        affiche_bouton(300, 280, 260, 60, 'Accélération', rempl='red')
+    
+    if nb_murs == 0:
+        affiche_bouton(300, 360, 300, 60, 'Murs', rempl='red')
+    elif nb_murs == 20:
+        affiche_bouton(300, 360, 300, 60, 'Murs : peu', rempl='green')
+    elif nb_murs == 50:
+        affiche_bouton(300, 360, 300, 60, 'Murs : moyen', rempl='green')
+    else:
+        affiche_bouton(300, 360, 300, 60, 'Murs : beaucoup', rempl='green')
+
+    texte(300, 80, 'Couleur du serpent', ancrage='center', taille = 14)
+    affiche_bouton(300, 120, 180, 60, '', rempl=couleur_serp)
+
+def options(torus, accel, nb_murs, couleur_serp):
+    while True:
+        efface_tout()
+        texte(TAILLE_CASE*LARGEUR_PLATEAU/2, 40, "Options", ancrage='center')
+        affiche_boutons_options(torus, accel, nb_murs, couleur_serp)
+        affiche_bouton(80, 490, 140, 60, 'Retour', rempl='grey')
+
+        while True:
+                ev = attend_ev()
+                ty = type_ev(ev)
+                if ty == 'Quitte':
+                    ferme_fenetre()
+                elif ty == 'ClicGauche':
+                    if clique_bouton(300, 200, 180, 60, ev):
+                        torus = not torus
+                        break
+                    elif clique_bouton(300, 280, 260, 60, ev):
+                        accel = not accel
+                        break
+                    elif clique_bouton(300, 360, 180, 60, ev):
+                        if nb_murs == 0:
+                            nb_murs = 20
+                        elif nb_murs == 20:
+                            nb_murs = 50
+                        elif nb_murs == 50:
+                            nb_murs = 70
+                        else:
+                            nb_murs = 0
+                        break
+                    elif clique_bouton(300, 120, 180, 60, ev):
+                        actuel = CYCLE_COULEUR.index(couleur_serp)
+                        if actuel == len(CYCLE_COULEUR)-1:
+                            couleur_serp = CYCLE_COULEUR[0]
+                        else:
+                            couleur_serp = CYCLE_COULEUR[actuel+1]
+                        break
+                    elif clique_bouton(80, 490, 140, 60, ev):
+                        return torus, accel, nb_murs, couleur_serp
+
 
 def affiche_bouton(x, y, longueur, largeur, text='', coul='black', rempl=''):
     rectangle(x - longueur/2, y - largeur/2, x + longueur/2, y + largeur/2, remplissage=rempl, couleur=coul)
@@ -194,19 +279,28 @@ if __name__ == "__main__":
     cree_fenetre(TAILLE_CASE * LARGEUR_PLATEAU,
                  TAILLE_CASE * HAUTEUR_PLATEAU + 80)
 
+    torus = False
+    accel = False
+    nb_murs = 0
+    couleur_serp = 'green'
+
+
     # boucle permettant de recommencer une nouvelle partie
     while True:
+        # écran titre
+        torus, accel, nb_murs, couleur_serp = ecran_titre(torus, accel, nb_murs, couleur_serp)
+        
         framerate = 10    # taux de rafraîchissement du jeu en images/s
         direction = (0, 0)  # direction initiale du serpent
         pommes = [] # liste des coordonnées des cases contenant des pommes
         serpent = [(LARGEUR_PLATEAU//2, HAUTEUR_PLATEAU//2)] # liste des coordonnées de cases adjacentes décrivant le serpent
+        murs = []
         timer_pomme = 0
         pomme_mangee = False
         score = 0
         timer = 0
-
-        # écran titre
-        ecran_titre()
+        frein_debut = True
+        murs = generation_mur(murs, nb_murs)
         
         # boucle principale
         jouer = True
@@ -214,9 +308,12 @@ if __name__ == "__main__":
             # affichage des objets
             efface_tout()
             affiche_pommes(pommes) 
-            affiche_serpent(serpent)
+            affiche_serpent(serpent, couleur_serp)
             affiche_hud(score, timer, framerate)
+            affiche_murs(murs)
             mise_a_jour()
+            if frein_debut:
+                frein_debut = direction == (0, 0)
             
             # gestion des événements
             ev = donne_ev()
@@ -230,7 +327,7 @@ if __name__ == "__main__":
                     pause()
 
             # mouvement du serpent et détection d'une collision avec le mur ou le serpent lui-même
-            if detection(serpent, direction):
+            if detection(serpent, murs, direction):
                 jouer = False
             else:
                 serpent = avance_serpent(serpent, direction, pomme_mangee)
@@ -240,9 +337,10 @@ if __name__ == "__main__":
             pomme_mangee, pommes, score = mange_pomme(serpent, pommes, score)
 
             # gestion de la génération des pommes
-            pommes, timer_pomme = generation_pomme(pommes, serpent, timer_pomme)
-            timer_pomme += 1/framerate
-            timer += 1/framerate
+            if not frein_debut:
+                pommes, timer_pomme = generation_pomme(pommes, serpent, murs, timer_pomme)
+                timer_pomme += 1/framerate
+                timer += 1/framerate
 
             if accel and framerate < 70 and pomme_mangee:
                 framerate += 0.25
