@@ -158,14 +158,17 @@ def generation_mur(nb_murs):
 def mange_pomme(serpent, pommes, pommes_special, score, ralenti, invincible):
     if serpent[0] in pommes:
         if serpent[0] in pommes_special:
-            pommes.remove(serpent[0])
-            pommes_special.pop(serpent[0])
-            
             if pommes_special[serpent[0]] == 'or':
+                pommes.remove(serpent[0])
+                pommes_special.pop(serpent[0])
                 return True, pommes, pommes_special, score+10, ralenti, invincible
             elif pommes_special[serpent[0]] == 'bleu':
+                pommes.remove(serpent[0])
+                pommes_special.pop(serpent[0])
                 return True, pommes, pommes_special, score+1, 5, invincible
             elif pommes_special[serpent[0]] == 'super':
+                pommes.remove(serpent[0])
+                pommes_special.pop(serpent[0])
                 return True, pommes, pommes_special, score+1, ralenti, 10
         else:
             pommes.remove(serpent[0])
@@ -453,7 +456,7 @@ if __name__ == "__main__":
 
             # attente avant rafraîchissement
             if ralenti > 0:
-                sleep(1.5/(framerate))
+                sleep(1.5/framerate)
             else:
                 sleep(1/framerate)
             
@@ -464,3 +467,4 @@ if __name__ == "__main__":
 
     # fermeture et sortie
     ferme_fenetre()
+
