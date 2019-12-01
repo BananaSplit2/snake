@@ -568,7 +568,6 @@ if __name__ == "__main__":
             
             # gestion des événements
             ev = donne_ev()
-            print(ev)
             ty = type_ev(ev)
             if ty == 'Quitte':
                 ferme_fenetre()
